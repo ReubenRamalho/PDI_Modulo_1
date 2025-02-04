@@ -2,11 +2,30 @@ import pathlib
 import argparse
 import random
 from PIL import Image
+import matplotlib.pyplot as plt
+
+# Função para exibir imagens (original e processada lado a lado)
+def display_images(original, processed, title="Processed Image"):
+    plt.figure(figsize=(10, 5))
+
+    # Imagem original
+    plt.subplot(1, 2, 1)
+    plt.title("Original")
+    plt.imshow(original)
+    plt.axis("off")
+
+    # Imagem processada
+    plt.subplot(1, 2, 2)
+    plt.title(title)
+    plt.imshow(processed)
+    plt.axis("off")
+
+    plt.show()
 
 # Implementação manual do flip horizontal
 def flip_horizontal(image):
     """
-    Realiza o flip horizontal de uma imagem manualmente.
+    Realiza o flip horizontal de uma imagem.
     """
     width, height = image.size
     flipped_image = Image.new(image.mode, (width, height))  # Cria uma nova imagem com o mesmo tamanho e modo
@@ -55,7 +74,7 @@ def random_zoom(image, max_zoom):
     return cropped_image
 
 # Função para processar uma única imagem
-def process_single_image(image_path, mode, max_angle=15, max_zoom=20):
+def process_single_image(image_path, mode, max_angle=15, max_zoom=20, show=False):
     image_path = pathlib.Path(image_path)
 
     if not image_path.exists():
@@ -82,6 +101,10 @@ def process_single_image(image_path, mode, max_angle=15, max_zoom=20):
     processed_img.save(processed_image_path)
 
     print(f"Imagem processada salva em: {processed_image_path}")
+    
+    # Exibe a imagem se a opção --show for ativada
+    if show:
+        display_images(img, processed_img, title=suffix.strip('_').capitalize())
 
 # Função para processar um diretório
 def process_directory(input_dir, output_dir, mode, max_angle=15, max_zoom=20):
@@ -126,8 +149,8 @@ def process_directory(input_dir, output_dir, mode, max_angle=15, max_zoom=20):
 # Configuração do parser para receber argumentos no terminal
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Flip horizontal, rotação ou zoom aleatório em imagens",
-        usage="%(prog)s mode path [--max_angle {1,5,10,15,25,45,90}] [--max_zoom {5,10,20,40,80}] [--output OUTPUT]",
+        description="Sistema de Manipulação de Imagens (smi)",
+        usage="%(prog)s mode path [--max_angle {1,5,10,15,25,45,90}] [--max_zoom {5,10,20,40,80}] [--output OUTPUT] [--show]",
         formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=40)
     )
 
@@ -147,30 +170,16 @@ if __name__ == "__main__":
 
     # Argumento opcional para o diretório de saída (apenas se path for um diretório)
     parser.add_argument("--output", default="output_processed", help="Caminho do diretório de saída (apenas se path for um diretório)")
+    
+    # Argumento opcional para exibir imagem original e processada para fins de comparação (somente para arquivos individuais)
+    parser.add_argument("--show", action="store_true", help="Exibe a imagem original e a processada (somente para arquivos individuais)")
 
     args = parser.parse_args()
 
-    # Decide qual função executar com base no modo escolhido
-    if args.mode == "fliph":
-        if pathlib.Path(args.path).is_file():
-            process_single_image(args.path, mode="fliph")
-        elif pathlib.Path(args.path).is_dir():
-            process_directory(args.path, args.output, mode="fliph")
-        else:
-            print(f"Erro: O caminho '{args.path}' não existe.")
-
-    elif args.mode == "rotation":
-        if pathlib.Path(args.path).is_file():
-            process_single_image(args.path, mode="rotation", max_angle=args.max_angle)
-        elif pathlib.Path(args.path).is_dir():
-            process_directory(args.path, args.output, mode="rotation", max_angle=args.max_angle)
-        else:
-            print(f"Erro: O caminho '{args.path}' não existe.")
-
-    elif args.mode == "zoom":
-        if pathlib.Path(args.path).is_file():
-            process_single_image(args.path, mode="zoom", max_zoom=args.max_zoom)
-        elif pathlib.Path(args.path).is_dir():
-            process_directory(args.path, args.output, mode="zoom", max_zoom=args.max_zoom)
-        else:
-            print(f"Erro: O caminho '{args.path}' não existe.")
+    # Decide qual função executar com base no path
+    if pathlib.Path(args.path).is_file():
+        process_single_image(pathlib.Path(args.path), mode=args.mode, max_angle=args.max_angle, max_zoom=args.max_zoom, show=args.show)
+    elif pathlib.Path(args.path).is_dir():
+        process_directory(pathlib.Path(args.path), args.output, mode=args.mode, max_angle=args.max_angle, max_zoom=args.max_zoom)
+    else:
+        print(f"Erro: O caminho '{args.path}' não existe.")
